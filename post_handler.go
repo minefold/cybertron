@@ -2,15 +2,44 @@ package main
 
 import (
 	"fmt"
+	"github.com/whatupdave/s3/s3util"
 	"io"
-	// "launchpad.net/goamz/aws"
-	"bytes"
-	"launchpad.net/goamz/s3"
+	// "launchpad.net/goamz/s3"
+	// "github.com/kr/pretty"
 	"log"
 	"net/http"
+	"strings"
 )
 
 type PostHandler struct {
+}
+
+func archiveExists(url string) bool {
+	prefix := strings.TrimLeft(url, "/") // strip off leading / to get prefix
+
+	list, err := s3util.List(s3url, prefix, "", 1, nil)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	return len(list.Contents) > 0
+}
+
+func uploadPart(part io.ReadCloser, url string, revision int) {
+	uploader, err := s3util.Create(fmt.Sprintf("%s.%d", url, revision), nil, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	_, err = io.Copy(uploader, part)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	defer uploader.Close()
+	defer part.Close()
 }
 
 func (h *PostHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -24,25 +53,16 @@ func (h *PostHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		if err == io.EOF {
 			break
 		}
-		fmt.Println(part.Header)
+
 		fmt.Printf("%s => %s\n", part.FileName(), req.URL.String())
 
-		// read file into a buffer so we can see how big it is. S3 needs to know the content-length
-		// this can be made more efficient by using S3s multipart uploads and uploading chunks of
-		// data
-		var b bytes.Buffer
-		length, err := io.Copy(&b, part)
-		if err != nil {
-			log.Println("Error copying to buffer", err)
-		}
+		url := s3url + req.URL.String()
+		if archiveExists(req.URL.String()) {
+			http.Error(w, "406 archive exists", http.StatusNotAcceptable)
+			return
 
-		log.Printf("Copied %d bytes", length)
-
-		// upload buffer to S3
-		err = bucket.PutReader(req.URL.String(), &b, length, "", s3.Private)
-		if err != nil {
-			log.Println(err)
+		} else {
+			uploadPart(part, url, 0)
 		}
 	}
-
 }

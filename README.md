@@ -2,11 +2,18 @@
 
 Cybertron is a versioned storage system for file archives that sits on S3.
 
+Cybertron uses DynamoDB to prevent you from uploading an earlier or conflicting revision of your archive.
+
+## Local Setup
+
+    psql -c "create database cybertron_development"
+    go build && POSTGRES_URL=postgres://localhost/cybertron_development ./cybertron
+
 ## Heroku Setup
 
     git clone git://github.com/minefold/cybertron.git && cd cybertron
     heroku create
-    heroku config:set AWS_ACCESS_KEY_ID=abcdef AWS_SECRET_ACCESS_KEY=abcdef S3_BUCKET=cybertron
+    heroku config:set AWS_ACCESS_KEY=abcdef AWS_SECRET_KEY=abcdef S3_URL=https://s3.amazonaws.com/cybertron
     git push heroku master
     heroku open
 
@@ -46,6 +53,8 @@ Cybertron is a versioned storage system for file archives that sits on S3.
 
 ## TODO
 
+Support tar gz
+Support tar lzo
 Support content type. -H Content-Type=application/targz
 Binary diff individual files in archive
 Update individual files in archive
