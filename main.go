@@ -17,7 +17,9 @@ func main() {
 	s3util.DefaultConfig.AccessKey = os.Getenv("AWS_ACCESS_KEY")
 	s3util.DefaultConfig.SecretKey = os.Getenv("AWS_SECRET_KEY")
 
-	http.Handle("/", new(Router))
+	store := NewS3Store(s3url)
+
+	http.Handle("/", &Router{Store: store})
 
 	fmt.Println("Listening")
 	err := http.ListenAndServe(":7070", nil)
