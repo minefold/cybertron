@@ -12,12 +12,19 @@ type Router struct {
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	fmt.Println(req.Method, req.URL)
 
-	switch req.Method {
-	case "GET":
-		new(GetHandler).ServeHTTP(w, req)
-
-	case "POST":
-		handler := &PostHandler{Store: r.Store}
+	handler := r.getHandler(req)
+	if handler != nil {
 		handler.ServeHTTP(w, req)
 	}
+}
+
+func (r *Router) getHandler(req *http.Request) http.Handler {
+	switch req.Method {
+	case "GET":
+		return &GetHandler{Store: r.Store}
+
+	case "POST":
+		return &PostHandler{Store: r.Store}
+	}
+	return nil
 }
