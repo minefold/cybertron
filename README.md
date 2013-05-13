@@ -25,9 +25,10 @@ Cybertron uses DynamoDB to prevent you from uploading an earlier or conflicting 
         -X POST
         -F file=@localfile.tar.gz
 
-    # upload the 8th revision
+    # update rev from 7 to 12
     curl -iu $CYBERKEY cybertron.com/path/archive?rev=7 \
         -X PATCH
+        -H 'X-Rev:12'
         -F file=@localfile.tar.gz
     # returns 409 if 7 is not head
 
@@ -53,6 +54,7 @@ Cybertron uses DynamoDB to prevent you from uploading an earlier or conflicting 
 
 ## TODO
 
+authentication
 Support tar gz
 Support tar lzo
 Support content type. -H Content-Type=application/targz

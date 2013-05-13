@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"github.com/whatupdave/s3/s3util"
 	"io"
 	"log"
 	"net/http"
@@ -10,13 +8,13 @@ import (
 )
 
 type GetHandler struct {
-  Store ArchiveStore
+	Store ArchiveStore
 }
 
 func (h *GetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// check for .tar.gz extension
 
-	parts := strings.Split(req.URL.String(), ".tar.gz")
+	parts := strings.Split(req.URL.Path, ".tar.gz")
 	if len(parts) < 2 {
 		http.NotFound(w, req)
 		return
@@ -30,7 +28,7 @@ func (h *GetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	rev := revs[len(revs)-1]
-	rc, err := s3util.Open(s3url+fmt.Sprintf("%s.%d", parts[0], rev.Rev), nil)
+	rc, err := h.Store.Get(parts[0], rev.Rev)
 	if err != nil {
 		http.NotFound(w, req)
 		return
