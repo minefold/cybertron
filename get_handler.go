@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
@@ -12,22 +13,28 @@ type GetHandler struct {
 }
 
 func (h *GetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	// check for .tar.gz extension
+	switch {
+	case strings.HasSuffix(req.URL.Path, ".tar.gz"):
+		h.tarGz(w, req)
 
-	parts := strings.Split(req.URL.Path, ".tar.gz")
-	if len(parts) < 2 {
+	case strings.HasSuffix(req.URL.Path, ".json"):
+		h.json(w, req)
+
+	default:
 		http.NotFound(w, req)
-		return
 	}
+}
 
-	revs, err := h.Store.ListRevs(parts[0], 0)
+func (h *GetHandler) tarGz(w http.ResponseWriter, req *http.Request) {
+	parts := strings.Split(req.URL.Path, ".tar.gz")
+
+	rev, err := h.Store.Head(parts[0])
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "500", http.StatusInternalServerError)
 		return
 	}
 
-	rev := revs[len(revs)-1]
 	rc, err := h.Store.Get(parts[0], rev.Rev)
 	if err != nil {
 		http.NotFound(w, req)
@@ -36,4 +43,24 @@ func (h *GetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	defer rc.Close()
 	io.Copy(w, rc)
+}
+
+func (h *GetHandler) json(w http.ResponseWriter, req *http.Request) {
+	parts := strings.Split(req.URL.Path, ".json")
+
+	revs, err := h.Store.ListRevs(parts[0], 0)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "500", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	enc := json.NewEncoder(w)
+	if err = enc.Encode(revs); err != nil {
+		log.Println(err)
+		http.Error(w, "500", http.StatusInternalServerError)
+		return
+	}
+
 }
