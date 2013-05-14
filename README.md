@@ -20,42 +20,41 @@ Cybertron uses DynamoDB to prevent you from uploading an earlier or conflicting 
 
 ## Example Usage
 
-    # upload initial revision
-    curl -iu $CYBERKEY cybertron.com/path/archive \
+    # upload initial archive
+    curl -iu $CYBERKEY cybertron.com/path/archive?rev=10 \
         -X POST
         -F file=@localfile.tar.gz
 
-    # update rev from 7 to 12
-    curl -iu $CYBERKEY cybertron.com/path/archive?rev=7 \
+    # update rev from 10 to 15
+    curl -iu $CYBERKEY cybertron.com/path/archive?rev=10 \
         -X PATCH
-        -H 'X-Rev:12'
+        -H 'X-Rev:15'
         -F file=@localfile.tar.gz
     # returns 409 if 7 is not head
 
-    # download latest
-    curl -iu $CYBERKEY cybertron.com/path/archive # 404
-    curl -iu $CYBERKEY cybertron.com/path/archive.tar.gz
-
-    # list revisions
+    # List revisions
     curl -iu $CYBERKEY cybertron.com/path/archive.json
+    curl -iu $CYBERKEY cybertron.com/path/archive.json?params
 
     # download revision
-    curl -iu $CYBERKEY cybertron.com/path/archive?rev=47
+    curl -u $CYBERKEY cybertron.com/path/archive # 404
+    curl -u $CYBERKEY cybertron.com/path/archive.tar.gz
+    curl -u $CYBERKEY cybertron.com/path/archive.tar.gz?rev=47
 
-    # delete file with revisions
-    curl -iu $CYBERKEY cybertron.com/path/archive \
+    # delete revisions
+    curl -iu $CYBERKEY cybertron.com/path/archive \  # all revisions
         -X DELETE
-
-    # delete revision
-    curl -iu $CYBERKEY cybertron.com/path/archive?rev=47 \
+    curl -iu $CYBERKEY cybertron.com/path/archive?rev=47 \  # one revision
         -X DELETE
 
 ## TODO
 
 authentication
+dlog
 Support tar gz
 Support tar lzo
 Support content type. -H Content-Type=application/targz
 Binary diff individual files in archive
 Update individual files in archive
 Support multiple download formats, through accepts header or extension
+graceful restarts
