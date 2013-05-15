@@ -28,6 +28,22 @@ func NewClient(url string) *Client {
 	return &Client{Url: url}
 }
 
+func (c *Client) List(url string, max int) ([]Revision, error) {
+	resp, err := http.Get(c.Url + url + ".json")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	dec := json.NewDecoder(resp.Body)
+
+	revs := make([]Revision, 0)
+	if err := dec.Decode(&revs); err != nil {
+		return nil, err
+	}
+
+	return revs, nil
+}
+
 func (c *Client) Create(url string, rev int, archiveType string, body io.Reader) error {
 	return c.multipartUpload("POST", url, rev, body, nil)
 }
@@ -38,36 +54,23 @@ func (c *Client) Update(url string, from, to int, archiveType string, body io.Re
 	return c.multipartUpload("PATCH", url, from, body, header)
 }
 
-func (c *Client) Head(url string) ([]Revision, error) {
-	resp, err := http.Get(c.Url + url + ".json")
+func (c *Client) Delete(url string, rev int) error {
+	r, err := http.NewRequest("DELETE", fmt.Sprintf("%s%s?rev=%d", c.Url, url, rev), nil)
 	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	dec := json.NewDecoder(resp.Body)
-
-	revs := make([]Revision, 0)
-	if err := dec.Decode(&revs); err != nil {
-		return nil, err
+		return err
 	}
 
-	return revs, nil
-}
-
-func (c *Client) ListRevs(url string, max int) ([]Revision, error) {
-	resp, err := http.Get(c.Url + url + ".json")
+	client := &http.Client{}
+	resp, err := client.Do(r)
 	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	dec := json.NewDecoder(resp.Body)
-
-	revs := make([]Revision, 0)
-	if err := dec.Decode(&revs); err != nil {
-		return nil, err
+		return err
 	}
 
-	return revs, nil
+	if resp.StatusCode != 200 {
+		return errors.New(resp.Status)
+	}
+
+	return nil
 }
 
 func (c *Client) multipartUpload(verb string, url string, rev int, body io.Reader, header http.Header) error {

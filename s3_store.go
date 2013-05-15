@@ -19,7 +19,7 @@ func NewS3Store(baseUrl string) *S3Store {
 }
 
 func (s3 *S3Store) Exists(url string) (bool, error) {
-	revs, err := s3.ListRevs(url, 1)
+	revs, err := s3.Revs(url, 1)
 	if err != nil {
 		return false, err
 	}
@@ -27,20 +27,7 @@ func (s3 *S3Store) Exists(url string) (bool, error) {
 	return len(revs) > 0, nil
 }
 
-func (s3 *S3Store) Head(url string) (*Revision, error) {
-	revs, err := s3.ListRevs(url, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(revs) == 0 {
-		return nil, nil
-	}
-
-	return &(revs[len(revs)-1]), nil
-}
-
-func (s3 *S3Store) ListRevs(url string, max int) ([]Revision, error) {
+func (s3 *S3Store) Revs(url string, max int) ([]Revision, error) {
 	prefix := strings.TrimLeft(url, "/") // strip off leading / to get prefix
 
 	if max < 1 {
@@ -79,6 +66,15 @@ func (s3 *S3Store) ListRevs(url string, max int) ([]Revision, error) {
 	return revs, err
 }
 
+func (s3 *S3Store) Get(url string, rev int) (io.ReadCloser, error) {
+	rc, err := s3util.Open(s3.key(url, rev), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return rc, nil
+}
+
 func (s3 *S3Store) Store(archive io.Reader, url string, rev int) error {
 	key := s3.key(url, rev)
 	uploader, err := s3util.Create(key, nil, nil)
@@ -96,13 +92,9 @@ func (s3 *S3Store) Store(archive io.Reader, url string, rev int) error {
 	return nil
 }
 
-func (s3 *S3Store) Get(url string, rev int) (io.ReadCloser, error) {
-	rc, err := s3util.Open(s3.key(url, rev), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return rc, nil
+func (s3 *S3Store) Del(url string, rev int) error {
+  key := s3.key(url, rev)
+  return s3util.Delete(key, nil)
 }
 
 func (s3 *S3Store) key(url string, rev int) string {

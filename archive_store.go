@@ -6,11 +6,11 @@ import (
 )
 
 type ArchiveStore interface {
-	Store(archive io.Reader, url string, revision int) error
-	Get(url string, revision int) (io.ReadCloser, error)
 	Exists(url string) (bool, error)
-	Head(url string) (*Revision, error)
-	ListRevs(url string, max int) ([]Revision, error)
+	Revs(url string, max int) ([]Revision, error)
+	Get(url string, rev int) (io.ReadCloser, error)
+	Store(archive io.Reader, url string, rev int) error
+  Del(url string, rev int) error
 }
 
 type Revision struct {

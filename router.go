@@ -31,8 +31,11 @@ func (r *Router) getHandler(req *http.Request) http.Handler {
 	case "POST":
 		return &PostHandler{Store: r.Store}
 
-	case "PATCH":
-		return &PatchHandler{Store: r.Store}
+  case "PATCH":
+    return &PatchHandler{Store: r.Store}
+
+  case "DELETE":
+    return &DeleteHandler{Store: r.Store}
 
 	}
 	return nil

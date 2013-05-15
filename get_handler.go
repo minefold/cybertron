@@ -28,14 +28,19 @@ func (h *GetHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 func (h *GetHandler) tarGz(w http.ResponseWriter, req *http.Request) {
 	parts := strings.Split(req.URL.Path, ".tar.gz")
 
-	rev, err := h.Store.Head(parts[0])
+	revs, err := h.Store.Revs(parts[0], 1)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "500", http.StatusInternalServerError)
 		return
 	}
 
-	rc, err := h.Store.Get(parts[0], rev.Rev)
+  if len(revs) == 0 {
+		http.NotFound(w, req)
+		return
+  }
+
+	rc, err := h.Store.Get(parts[0], revs[0].Rev)
 	if err != nil {
 		http.NotFound(w, req)
 		return
@@ -48,7 +53,7 @@ func (h *GetHandler) tarGz(w http.ResponseWriter, req *http.Request) {
 func (h *GetHandler) json(w http.ResponseWriter, req *http.Request) {
 	parts := strings.Split(req.URL.Path, ".json")
 
-	revs, err := h.Store.ListRevs(parts[0], 0)
+	revs, err := h.Store.Revs(parts[0], 0)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "500", http.StatusInternalServerError)

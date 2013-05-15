@@ -23,12 +23,14 @@ func main() {
 	list(remote)
   update(local, remote, 1, 2)
   list(remote)
-  delete(local, remote, 1)
+  delete(remote, 1)
+  list(remote)
+  delete(remote, 2)
   list(remote)
 }
 
 func list(remote string) {
-	revs, err := client.ListRevs(remote, 0)
+	revs, err := client.List(remote, 0)
 	if err != nil {
 		panic(err)
 	}
@@ -49,15 +51,22 @@ func create(local, remote string, rev int) {
 }
 
 func update(local, remote string, from, to int) {
-	tar, err := tarGz(local)
-	if err != nil {
-		panic(err)
-	}
+  tar, err := tarGz(local)
+  if err != nil {
+    panic(err)
+  }
 
-	if err := client.Update(remote, from, to, cybertron.TarGz, tar); err != nil {
-		panic(err)
-	}
-	fmt.Println("updated", from, "to", to)
+  if err := client.Update(remote, from, to, cybertron.TarGz, tar); err != nil {
+    panic(err)
+  }
+  fmt.Println("updated", from, "to", to)
+}
+
+func delete(remote string, rev int) {
+  if err := client.Delete(remote, rev); err != nil {
+    panic(err)
+  }
+  fmt.Println("deleted", rev)
 }
 
 func tarGz(path string) (io.Reader, error) {
