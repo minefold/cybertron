@@ -19,6 +19,8 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if handler != nil {
 		handler.ServeHTTP(w, req)
 	}
+
+	fmt.Println(req.Method, req.URL.String(), "DONE")
 }
 
 func (r *Router) getHandler(req *http.Request) http.Handler {

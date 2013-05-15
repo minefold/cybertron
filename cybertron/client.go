@@ -1,12 +1,13 @@
 package cybertron
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -27,38 +28,30 @@ func NewClient(url string) *Client {
 	return &Client{Url: url}
 }
 
-func (c *Client) Create(url string, revision int, archiveType string, body io.Reader) error {
-	buf := new(bytes.Buffer)
-	w := multipart.NewWriter(buf)
+func (c *Client) Create(url string, rev int, archiveType string, body io.Reader) error {
+	return c.multipartUpload("POST", url, rev, body, nil)
+}
 
-	fw, err := w.CreateFormFile("file", "localfile.tar.gz")
+func (c *Client) Update(url string, from, to int, archiveType string, body io.Reader) error {
+	header := make(http.Header)
+	header.Add("X-Rev", strconv.Itoa(to))
+	return c.multipartUpload("PATCH", url, from, body, header)
+}
+
+func (c *Client) Head(url string) ([]Revision, error) {
+	resp, err := http.Get(c.Url + url + ".json")
 	if err != nil {
-		return err
+		return nil, err
+	}
+	defer resp.Body.Close()
+	dec := json.NewDecoder(resp.Body)
+
+	revs := make([]Revision, 0)
+	if err := dec.Decode(&revs); err != nil {
+		return nil, err
 	}
 
-	_, err = io.Copy(fw, body)
-	if err != nil {
-		return err
-	}
-	w.Close()
-
-	req, err := http.NewRequest("POST", c.Url+url, buf)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", w.FormDataContentType())
-	// req.SetBasicAuth("email@email.com", "password")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != 200 {
-		return errors.New(resp.Status)
-	}
-
-	return err
+	return revs, nil
 }
 
 func (c *Client) ListRevs(url string, max int) ([]Revision, error) {
@@ -75,4 +68,41 @@ func (c *Client) ListRevs(url string, max int) ([]Revision, error) {
 	}
 
 	return revs, nil
+}
+
+func (c *Client) multipartUpload(verb string, url string, rev int, body io.Reader, header http.Header) error {
+	pr, pw := io.Pipe()
+	mpw := multipart.NewWriter(pw)
+
+	r, err := http.NewRequest(verb, fmt.Sprintf("%s%s?rev=%d", c.Url, url, rev), pr)
+	if err != nil {
+		return err
+	}
+	if header != nil {
+		r.Header = header
+	}
+	r.Header.Set("Content-Type", mpw.FormDataContentType())
+
+	go func() {
+		filew, err := mpw.CreateFormFile("file", "file")
+		if err != nil {
+			return
+		}
+		io.Copy(filew, body)
+
+		mpw.Close()
+		pw.Close()
+	}()
+
+	client := &http.Client{}
+	resp, err := client.Do(r)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != 200 {
+		return errors.New(resp.Status)
+	}
+
+	return nil
 }

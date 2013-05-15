@@ -34,7 +34,7 @@ Cybertron uses DynamoDB to prevent you from uploading an earlier or conflicting 
 
     # List revisions
     curl -iu $CYBERKEY cybertron.com/path/archive.json
-    curl -iu $CYBERKEY cybertron.com/path/archive.json?params
+    curl -iu $CYBERKEY cybertron.com/path/archive.json?last=3  # 3 latest revs
 
     # download revision
     curl -u $CYBERKEY cybertron.com/path/archive # 404
