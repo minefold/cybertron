@@ -15,6 +15,7 @@ type S3Store struct {
 }
 
 func NewS3Store(baseUrl string) *S3Store {
+
 	return &S3Store{BaseUrl: baseUrl}
 }
 
@@ -78,6 +79,7 @@ func (s3 *S3Store) Get(url string, rev int) (io.ReadCloser, error) {
 func (s3 *S3Store) Store(archive io.Reader, url string, rev int) error {
 	key := s3.key(url, rev)
 	uploader, err := s3util.Create(key, nil, nil)
+	defer uploader.Close()
 	if err != nil {
 		return err
 	}
@@ -86,8 +88,6 @@ func (s3 *S3Store) Store(archive io.Reader, url string, rev int) error {
 	if err != nil {
 		return err
 	}
-
-	defer uploader.Close()
 
 	return nil
 }
@@ -100,3 +100,4 @@ func (s3 *S3Store) Del(url string, rev int) error {
 func (s3 *S3Store) key(url string, rev int) string {
 	return s3.BaseUrl + fmt.Sprintf("%s/%d.tar.gz", url, rev)
 }
+

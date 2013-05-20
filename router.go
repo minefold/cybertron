@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/pprof"
 	"strconv"
+	"strings"
 )
 
 type Router struct {
@@ -24,6 +26,18 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func (r *Router) getHandler(req *http.Request) http.Handler {
+	url := req.URL.String()
+	switch {
+	case strings.HasPrefix(url, "/debug/pprof/cmdline"):
+		return http.HandlerFunc(pprof.Cmdline)
+	case strings.HasPrefix(url, "/debug/pprof/profile"):
+		return http.HandlerFunc(pprof.Profile)
+	case strings.HasPrefix(url, "/debug/pprof/"):
+		return http.HandlerFunc(pprof.Index)
+	case strings.HasPrefix(url, "/debug/pprof/symbol"):
+		return http.HandlerFunc(pprof.Symbol)
+	}
+
 	switch req.Method {
 	case "GET":
 		return &GetHandler{Store: r.Store}
@@ -31,11 +45,11 @@ func (r *Router) getHandler(req *http.Request) http.Handler {
 	case "POST":
 		return &PostHandler{Store: r.Store}
 
-  case "PATCH":
-    return &PatchHandler{Store: r.Store}
+	case "PATCH":
+		return &PatchHandler{Store: r.Store}
 
-  case "DELETE":
-    return &DeleteHandler{Store: r.Store}
+	case "DELETE":
+		return &DeleteHandler{Store: r.Store}
 
 	}
 	return nil
