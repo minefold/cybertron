@@ -15,6 +15,7 @@ type S3Store struct {
 }
 
 func NewS3Store(baseUrl string) *S3Store {
+
 	return &S3Store{BaseUrl: baseUrl}
 }
 
@@ -99,3 +100,4 @@ func (s3 *S3Store) Del(url string, rev int) error {
 func (s3 *S3Store) key(url string, rev int) string {
 	return s3.BaseUrl + fmt.Sprintf("%s/%d.tar.gz", url, rev)
 }
+
