@@ -2,12 +2,14 @@ package main
 
 import (
 	// "fmt"
+	"fmt"
 	"github.com/rcrowley/goagain"
 	"github.com/whatupdave/s3/s3util"
 	"log"
 	"net"
 	"net/http"
 	"os"
+	"runtime"
 	"time"
 )
 
@@ -16,6 +18,8 @@ var (
 )
 
 func main() {
+	go memDebugger()
+
 	var (
 		err  error
 		l    net.Listener
@@ -73,4 +77,13 @@ func serve(l net.Listener) {
 	store := NewS3Store(s3url)
 
 	http.Serve(l, &Router{Store: store})
+}
+
+func memDebugger() {
+	t := time.NewTicker(5 * time.Second)
+	for _ = range t.C {
+		var ms runtime.MemStats
+		runtime.ReadMemStats(&ms)
+		fmt.Printf("goroutines: %d  alloc: %d\n", runtime.NumGoroutine(), ms.Alloc)
+	}
 }

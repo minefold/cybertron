@@ -78,6 +78,7 @@ func (s3 *S3Store) Get(url string, rev int) (io.ReadCloser, error) {
 func (s3 *S3Store) Store(archive io.Reader, url string, rev int) error {
 	key := s3.key(url, rev)
 	uploader, err := s3util.Create(key, nil, nil)
+	defer uploader.Close()
 	if err != nil {
 		return err
 	}
@@ -86,8 +87,6 @@ func (s3 *S3Store) Store(archive io.Reader, url string, rev int) error {
 	if err != nil {
 		return err
 	}
-
-	defer uploader.Close()
 
 	return nil
 }
